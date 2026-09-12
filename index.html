@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="alternate icon" type="image/png" href="assets/icon.png">
+  <title>Habit Tracker Dashboard</title>
+  <meta name="description" content="A beautiful, responsive, offline-first monthly habit tracker dashboard.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Application Styles -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- ====================================================================
+         HEADER & CONTROLS
+         ==================================================================== -->
+    <header class="dashboard-header" role="banner">
+      <div class="header-left">
+        <div class="title-group">
+          <h1 class="month-large-title" id="monthTitle">June</h1>
+          <div class="tracker-subtitle">HABIT TRACKER</div>
+        </div>
+
+        <!-- Month & Year Selector (Reference Style) -->
+        <div class="month-year-control-box" aria-label="Date Navigation Control">
+          <div class="control-label">MONTH</div>
+          <div class="control-select-wrapper">
+            <select id="monthSelect" class="control-select" aria-label="Select Month">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div class="control-label">YEAR</div>
+          <div class="control-select-wrapper">
+            <select id="yearSelect" class="control-select" aria-label="Select Year">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action & Month Stepper Controls -->
+      <div class="header-actions-bar">
+        <div class="nav-buttons-group">
+          <button type="button" class="btn" id="btnPrevMonth" title="Previous Month" aria-label="Previous Month">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Prev</span>
+          </button>
+          <button type="button" class="btn btn-accent" id="btnToday" title="Jump to Current Month">Today</button>
+          <button type="button" class="btn" id="btnNextMonth" title="Next Month" aria-label="Next Month">
+            <span>Next</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+
+        <div class="action-buttons-group">
+          <button type="button" class="btn btn-primary" id="btnAddHabit" title="Add a new habit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Habit</span>
+          </button>
+          <button type="button" class="btn" id="btnDemoData" title="Load realistic demo sample check-ins">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Demo Data</span>
+          </button>
+          <button type="button" class="btn" id="btnExport" title="Export data to JSON file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Export</span>
+          </button>
+          <button type="button" class="btn" id="btnImport" title="Import data from JSON file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Import</span>
+          </button>
+          <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+          <button type="button" class="btn" id="btnSettings" title="Application Settings" aria-label="Settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Right Decorative & Data Trend Area Wave -->
+      <div class="header-right-trend" title="Monthly Trend Wave">
+        <canvas id="trendChartCanvas" class="trend-canvas"></canvas>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         TOP SECTION: MOTIVATIONAL CARD + WEEKLY ANALYTICS
+         ==================================================================== -->
+    <section class="dashboard-top-section" aria-label="Motivational and Weekly Overview">
+      
+      <!-- Motivational Illustration Card -->
+      <div class="motivational-card">
+        <div class="illustration-box" aria-hidden="true">
+          <!-- Artistic Vector Illustration of Mindful Workspace / Study -->
+          <svg class="illustration-svg" viewBox="0 0 260 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="260" height="190" fill="#FDFBF7"/>
+            <path d="M0 140 C80 130, 180 150, 260 135 L260 190 L0 190 Z" fill="#EBF3FE"/>
+            <!-- Plant pot on table -->
+            <path d="M35 155 L45 155 L42 175 L38 175 Z" fill="#D4A373"/>
+            <path d="M40 155 Q30 135 40 120 Q50 135 40 155 Z" fill="#81C784"/>
+            <path d="M40 145 Q55 130 50 115 Q35 130 40 145 Z" fill="#A5D6A7"/>
+            
+            <!-- Character Figure -->
+            <ellipse cx="120" cy="65" rx="16" ry="19" fill="#FAD2B8"/>
+            <!-- Hair -->
+            <path d="M102 65 C102 42, 138 42, 138 65 C138 78, 130 92, 126 100 C114 96, 105 85, 102 65 Z" fill="#1E293B"/>
+            <path d="M100 62 C104 52, 124 50, 136 60 C128 58, 110 56, 106 72 Z" fill="#0F172A"/>
+            <!-- Torso / Shirt (Pastel Warm White / Cream) -->
+            <path d="M106 84 C95 95, 88 120, 88 160 L145 160 C145 125, 138 95, 126 84 Z" fill="#FFFFFF"/>
+            <!-- Skirt / Lower (Pastel Green) -->
+            <path d="M88 150 L145 150 L150 185 L85 185 Z" fill="#A8D5BA"/>
+            <!-- Arms leaning towards table -->
+            <path d="M105 98 C95 112, 110 135, 140 142 L148 135 C125 130, 115 115, 116 98 Z" fill="#FAD2B8"/>
+            <path d="M125 98 C135 110, 150 130, 175 138 L170 145 C145 138, 132 118, 126 98 Z" fill="#FAD2B8"/>
+            <!-- Desk Surface -->
+            <rect x="20" y="145" width="220" height="8" rx="3" fill="#E2E8F0"/>
+            <!-- Planner / Notebook on Desk -->
+            <rect x="135" y="140" width="35" height="12" rx="2" fill="#F48FB1"/>
+            <rect x="150" y="136" width="32" height="12" rx="2" fill="#7BAEFA"/>
+            <circle cx="178" cy="142" r="3" fill="#F6BD60"/>
+            <!-- Cozy lamp / warm light circle in background -->
+            <circle cx="210" cy="55" r="32" fill="#FEF3C7" fill-opacity="0.6"/>
+            <path d="M210 20 L210 40 M200 40 L220 40 L210 50 Z" stroke="#D97706" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="quote-box">
+          <div class="quote-author" id="motivationalAuthor">I am...</div>
+          <div class="quote-text" id="motivationalText">Focused, intentional, and ready for the month ahead.</div>
+        </div>
+      </div>
+
+      <!-- Weekly Analytics (Bars + Circular Progress Rings) -->
+      <div class="weekly-analytics-wrapper">
+        <div id="weeklyAnalyticsContainer">
+          <!-- Populated dynamically by charts.js -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         MONTHLY SUMMARY STATISTICS STRIP
+         ==================================================================== -->
+    <section class="monthly-stats-strip" aria-label="Monthly Statistics">
+      <div class="stat-card">
+        <div class="stat-icon" aria-hidden="true">📈</div>
+        <div class="stat-info">
+          <span class="stat-title">Monthly Completion</span>
+          <span class="stat-value" id="statMonthlyPct">0.0%</span>
+          <span class="stat-subtext"><span id="statCompletedCount">0</span> / <span id="statPossibleCount">0</span> checks</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" aria-hidden="true">🌟</div>
+        <div class="stat-info">
+          <span class="stat-title">Best Day</span>
+          <span class="stat-value" id="statBestDay">-</span>
+          <span class="stat-subtext">Peak performance</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" aria-hidden="true">🎯</div>
+        <div class="stat-info">
+          <span class="stat-title">Best Habit</span>
+          <span class="stat-value" id="statBestHabit">-</span>
+          <span class="stat-subtext">Most consistent</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" aria-hidden="true">🔥</div>
+        <div class="stat-info">
+          <span class="stat-title">Current Streak</span>
+          <span class="stat-value" id="statCurrentStreak">0 days</span>
+          <span class="stat-subtext">Active streak</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" aria-hidden="true">🏆</div>
+        <div class="stat-info">
+          <span class="stat-title">Longest Streak</span>
+          <span class="stat-value" id="statLongestStreak">0 days</span>
+          <span class="stat-subtext">Personal record</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         HABIT MATRIX GRID
+         ==================================================================== -->
+    <main class="grid-outer-container" role="main">
+      <div class="grid-scroll-wrapper" id="gridContainer">
+        <table class="habit-matrix-table" id="habitGridTable" aria-label="Habit Tracking Grid">
+          <!-- Table Header & Body generated by app.js -->
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-card" id="emptyState" style="display: none;">
+        <div class="empty-state-icon">🌱</div>
+        <h3 class="empty-state-title">No habits yet</h3>
+        <p class="empty-state-subtitle">Start building your routine and track your daily progress.</p>
+        <button type="button" class="btn btn-primary" id="btnEmptyAddHabit">
+          + Add Your First Habit
+        </button>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ====================================================================
+       MODALS
+       ==================================================================== -->
+  
+  <!-- Add / Edit Habit Modal -->
+  <div class="modal-overlay" id="habitModal" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="habitModalTitle">Add New Habit</h3>
+        <button type="button" class="btn-icon" onclick="window.app.closeHabitModal()" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="habitForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="habitNameInput">Habit Name *</label>
+            <input type="text" id="habitNameInput" class="form-input" placeholder="e.g., Read 10 pages" required maxlength="60" autocomplete="off" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="habitDescInput">Description / Motivation (Optional)</label>
+            <textarea id="habitDescInput" class="form-textarea" placeholder="Why is this habit important to you?" rows="2"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Habit Color Tag</label>
+            <div class="color-swatches-grid">
+              <button type="button" class="color-swatch-btn selected" style="background-color: #6ea8fe;" data-color="#6ea8fe" title="Blue"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #f06292;" data-color="#f06292" title="Pink"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #4dd0e1;" data-color="#4dd0e1" title="Teal"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #f6bd60;" data-color="#f6bd60" title="Gold"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #90caf9;" data-color="#90caf9" title="Sky"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #ba68c8;" data-color="#ba68c8" title="Purple"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #4db6ac;" data-color="#4db6ac" title="Mint"></button>
+              <button type="button" class="color-swatch-btn" style="background-color: #ff8a65;" data-color="#ff8a65" title="Coral"></button>
+              <input type="color" id="habitColorInput" class="color-picker-input" value="#6ea8fe" title="Custom color" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="btnCancelHabit">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveHabit">Save Habit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="deleteModalTitle">Delete Habit</h3>
+        <button type="button" class="btn-icon" onclick="window.app.closeDeleteModal()" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong id="deleteHabitName">this habit</strong>?</p>
+        <p style="font-size: 0.85rem; color: #64748B; margin-top: 8px;">All associated check-in history will be permanently deleted.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="btnCancelDelete">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmDelete">Delete Habit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="settingsModalTitle">Settings & Data Management</h3>
+        <button type="button" class="btn-icon" onclick="window.app.closeSettingsModal()" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="settingsForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="settingMotivAuthor">Motivational Title</label>
+            <input type="text" id="settingMotivAuthor" class="form-input" value="I am..." />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingMotivText">Motivational Quote / Focus</label>
+            <textarea id="settingMotivText" class="form-textarea" rows="2"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingFirstDay">First Day of Week</label>
+            <select id="settingFirstDay" class="form-select">
+              <option value="monday">Monday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+          </div>
+
+          <div class="danger-zone">
+            <div class="danger-zone-title">Danger Zone</div>
+            <div class="danger-zone-actions">
+              <button type="button" class="btn btn-danger" id="btnResetMonth">Reset Selected Month</button>
+              <button type="button" class="btn btn-danger" id="btnResetAll">Reset All Data</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="btnCancelSettings">Close</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Main Application Script (ES Module) -->
+  <script src="js/bundle.js"></script>
+</body>
+</html>
