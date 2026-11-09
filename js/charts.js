@@ -1,4 +1,4 @@
-﻿/**
+/**
  * charts.js - Top Trend Area Chart & Weekly Analytics Visualization
  */
 
@@ -31,15 +31,29 @@ export class ChartService {
     const labels = monthData.days.map(d => `Day ${d.day}`);
     const data = stats.dailyPercentages;
 
-    // Destroy previous Chart.js instance if exists
-    if (this.trendChartInstance) {
-      this.trendChartInstance.destroy();
-      this.trendChartInstance = null;
-    }
-
     if (window.Chart) {
+      if (this.trendChartInstance) {
+        const currentLabels = this.trendChartInstance.data.labels || [];
+        const monthChanged = currentLabels.length !== labels.length || currentLabels[0] !== labels[0];
+
+        this.trendChartInstance.data.labels = labels;
+        this.trendChartInstance.data.datasets[0].data = data;
+
+        if (this.trendChartInstance.options.plugins?.tooltip?.callbacks) {
+          this.trendChartInstance.options.plugins.tooltip.callbacks.title = (items) => `${monthData.monthName} ${items[0].label}`;
+        }
+
+        if (monthChanged) {
+          this.trendChartInstance.update();
+        } else {
+          // Instant smooth update without repeating whole entrance animation on every checkbox toggle
+          this.trendChartInstance.update('none');
+        }
+        return;
+      }
+
       const ctx = canvasElement.getContext('2d');
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvasElement.height || 120);
+      const gradient = ctx.createLinearGradient(0, 0, 0, 110);
       gradient.addColorStop(0, 'rgba(37, 99, 235, 0.55)');
       gradient.addColorStop(0.8, 'rgba(37, 99, 235, 0.2)');
       gradient.addColorStop(1, 'rgba(37, 99, 235, 0.03)');
@@ -66,7 +80,7 @@ export class ChartService {
           responsive: true,
           maintainAspectRatio: false,
           animation: {
-            duration: 600,
+            duration: 500,
             easing: 'easeOutQuart'
           },
           plugins: {
@@ -113,10 +127,10 @@ export class ChartService {
    */
   drawCanvasTrendFallback(canvas, data) {
     const ctx = canvas.getContext('2d');
-    const width = canvas.parentElement.clientWidth || 400;
-    const height = 90;
-    canvas.width = width * window.devicePixelRatio || 400;
-    canvas.height = height * window.devicePixelRatio || 90;
+    const width = canvas.parentElement?.clientWidth || 400;
+    const height = 110;
+    canvas.width = width * (window.devicePixelRatio || 1);
+    canvas.height = height * (window.devicePixelRatio || 1);
     ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
     ctx.clearRect(0, 0, width, height);

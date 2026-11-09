@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    HABIT TRACKER - HIGH CONTRAST & ACCESSIBLE PASTEL DASHBOARD
    ========================================================================== */
 
@@ -683,11 +683,13 @@ body {
   opacity: 0.4;
 }
 
-.habit-row.drag-over-top {
+.habit-row.drag-over-top,
+.habit-row.drag-over-top td {
   border-top: 3px solid #2563EB;
 }
 
-.habit-row.drag-over-bottom {
+.habit-row.drag-over-bottom,
+.habit-row.drag-over-bottom td {
   border-bottom: 3px solid #2563EB;
 }
 

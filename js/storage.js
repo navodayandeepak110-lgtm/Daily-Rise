@@ -1,4 +1,4 @@
-﻿/**
+/**
  * storage.js - LocalStorage management for Habit Tracker
  */
 

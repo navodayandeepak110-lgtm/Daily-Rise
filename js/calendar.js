@@ -1,4 +1,4 @@
-﻿/**
+/**
  * calendar.js - Calendar and Date calculations
  */
 
@@ -70,13 +70,16 @@ export class CalendarService {
 
   /**
    * Returns information for all days in the current month,
-   * grouped into weeks matching the reference layout (7 days per standard week block,
-   * with exact weekday letters corresponding to the calendar).
+   * grouped into weeks matching the calendar according to firstDayOfWeek ('monday' or 'sunday').
    */
   getMonthData(firstDayOfWeek = 'monday') {
     const totalDays = this.getDaysInMonth();
     const today = new Date();
     const todayKey = this.formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+    const startDayIdx = (firstDayOfWeek === 'sunday') ? 0 : 1; // 0 = Sunday, 1 = Monday
+    let currentWeekIndex = 0;
 
     const days = [];
     for (let d = 1; d <= totalDays; d++) {
@@ -84,22 +87,19 @@ export class CalendarService {
       const dayOfWeekIdx = dateObj.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
       const dateKey = this.formatDateKey(this.currentYear, this.currentMonth, d);
 
+      // Increment week when transitioning onto start day of week
+      if (d > 1 && dayOfWeekIdx === startDayIdx) {
+        currentWeekIndex++;
+      }
+
       // Letter representation based on day of week
-      let letter = '';
-      if (dayOfWeekIdx === 0) letter = 'S';
-      else if (dayOfWeekIdx === 1) letter = 'M';
-      else if (dayOfWeekIdx === 2) letter = 'T';
-      else if (dayOfWeekIdx === 3) letter = 'W';
-      else if (dayOfWeekIdx === 4) letter = 'T';
-      else if (dayOfWeekIdx === 5) letter = 'F';
-      else if (dayOfWeekIdx === 6) letter = 'S';
+      const letterMap = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const letter = letterMap[dayOfWeekIdx];
 
+      const dateTime = dateObj.getTime();
       const isToday = (dateKey === todayKey);
-      const isPast = dateObj < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const isFuture = dateObj > new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-      // Standard week grouping (7 days per block as in the reference tracker)
-      const weekIndex = Math.floor((d - 1) / 7);
+      const isPast = dateTime < todayMidnight;
+      const isFuture = dateTime > todayMidnight;
 
       days.push({
         day: d,
@@ -107,7 +107,7 @@ export class CalendarService {
         dayOfWeekIdx,
         dayLetter: letter,
         dayFullName: DAY_FULL_NAMES[dayOfWeekIdx],
-        weekIndex,
+        weekIndex: currentWeekIndex,
         isToday,
         isPast,
         isFuture,
@@ -117,18 +117,18 @@ export class CalendarService {
 
     // Group into weeks
     const weeks = [];
-    const totalWeeks = Math.ceil(totalDays / 7);
+    const uniqueWeekIndices = [...new Set(days.map(d => d.weekIndex))];
 
-    for (let w = 0; w < totalWeeks; w++) {
-      const weekDays = days.filter(d => d.weekIndex === w);
+    uniqueWeekIndices.forEach((wIdx, num) => {
+      const weekDays = days.filter(d => d.weekIndex === wIdx);
       weeks.push({
-        weekNumber: w + 1,
-        weekName: `Week ${w + 1}`,
+        weekNumber: num + 1,
+        weekName: `Week ${num + 1}`,
         days: weekDays,
         startDay: weekDays[0].day,
         endDay: weekDays[weekDays.length - 1].day
       });
-    }
+    });
 
     return {
       year: this.currentYear,

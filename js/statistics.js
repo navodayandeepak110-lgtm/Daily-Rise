@@ -1,8 +1,32 @@
-﻿/**
+/**
  * statistics.js - Analytics, progress, and streak calculations
  */
 
 export class StatisticsService {
+  /**
+   * Format today's date key YYYY-MM-DD
+   */
+  static getTodayKey() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  /**
+   * Get the previous day's date key YYYY-MM-DD
+   */
+  static getPreviousDateKey(dateKey) {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() - 1);
+    const prevY = date.getFullYear();
+    const prevM = String(date.getMonth() + 1).padStart(2, '0');
+    const prevD = String(date.getDate()).padStart(2, '0');
+    return `${prevY}-${prevM}-${prevD}`;
+  }
+
   /**
    * Calculate all stats for a given month's data, habits, and completions
    */
@@ -11,16 +35,17 @@ export class StatisticsService {
     const totalDays = monthData.totalDays;
 
     if (totalHabits === 0 || totalDays === 0) {
+      const globalStreak = this.calculateGlobalStreak(completions);
       return {
         dailyPercentages: monthData.days.map(() => 0),
-        weeklyStats: monthData.weeks.map(w => ({ weekNumber: w.weekNumber, percentage: 0, completed: 0, possible: 0 })),
+        weeklyStats: monthData.weeks.map(w => ({ weekNumber: w.weekNumber, weekName: w.weekName, percentage: 0, completed: 0, possible: 0 })),
         monthlyPercentage: 0,
         completedCheckins: 0,
         possibleCheckins: 0,
-        bestDay: { day: null, percentage: 0, dateKey: '' },
+        bestDay: { day: null, percentage: 0, dateKey: '', dayFullName: '-' },
         bestHabit: { name: 'None', completedCount: 0, percentage: 0 },
-        currentStreak: 0,
-        longestStreak: 0,
+        currentStreak: globalStreak.currentStreak,
+        longestStreak: globalStreak.longestStreak,
         habitStats: []
       };
     }
@@ -31,7 +56,7 @@ export class StatisticsService {
     // Daily calculations
     const dailyPercentages = [];
     const dailyCompletedCounts = [];
-    let bestDayObj = { day: null, percentage: -1, dateKey: '' };
+    let bestDayObj = { day: null, percentage: -1, dateKey: '', dayFullName: '-' };
 
     monthData.days.forEach(d => {
       const dayCompletions = completions[d.dateKey] || {};
@@ -99,7 +124,7 @@ export class StatisticsService {
         }
       });
       const pct = (completedCount / totalDays) * 100;
-      const streak = this.calculateHabitStreak(h.id, monthData, completions);
+      const streak = this.calculateHabitStreak(h.id, completions);
       return {
         id: h.id,
         name: h.name,
@@ -119,8 +144,8 @@ export class StatisticsService {
       }
     }
 
-    // Global Streaks (days with at least 1 completed habit)
-    const globalStreak = this.calculateGlobalStreak(monthData, dailyCompletedCounts);
+    // Global Streaks (days with at least 1 completed habit, seamlessly across months)
+    const globalStreak = this.calculateGlobalStreak(completions);
 
     return {
       dailyPercentages,
@@ -137,101 +162,122 @@ export class StatisticsService {
   }
 
   /**
-   * Calculate streak for a specific habit up to today or end of days
+   * Calculate current and all-time longest streak for a specific habit across all months
    */
-  static calculateHabitStreak(habitId, monthData, completions) {
-    const today = new Date();
-    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  static calculateHabitStreak(habitId, completions) {
+    if (!completions) return { currentStreak: 0, longestStreak: 0 };
 
-    let longestStreak = 0;
-    let tempStreak = 0;
+    const isCompleted = (key) => !!(completions[key] && completions[key][habitId]);
+    const todayKey = this.getTodayKey();
+
+    // 1. Current Active Streak: backwards from today (or yesterday if today is not checked)
     let currentStreak = 0;
+    let key = todayKey;
 
-    const days = monthData.days;
-    // Find index of today or end of past days
-    let activeLimitIdx = days.length - 1;
-    for (let i = 0; i < days.length; i++) {
-      if (days[i].isFuture) {
-        activeLimitIdx = i - 1;
-        break;
-      }
-    }
-    if (activeLimitIdx < 0) activeLimitIdx = 0;
-
-    // Calculate longest streak in the sequence
-    for (let i = 0; i <= activeLimitIdx; i++) {
-      const d = days[i];
-      const done = !!(completions[d.dateKey] && completions[d.dateKey][habitId]);
-      if (done) {
-        tempStreak++;
-        if (tempStreak > longestStreak) longestStreak = tempStreak;
+    if (!isCompleted(key)) {
+      key = this.getPreviousDateKey(key);
+      if (!isCompleted(key)) {
+        currentStreak = 0;
       } else {
-        tempStreak = 0;
-      }
-    }
-
-    // Calculate current streak backwards from today (or last past day)
-    let backIdx = activeLimitIdx;
-    while (backIdx >= 0) {
-      const d = days[backIdx];
-      const done = !!(completions[d.dateKey] && completions[d.dateKey][habitId]);
-      if (done) {
-        currentStreak++;
-        backIdx--;
-      } else {
-        // If today is unchecked, allow looking from yesterday
-        if (backIdx === activeLimitIdx && days[backIdx].isToday && currentStreak === 0) {
-          backIdx--;
-          continue;
+        while (isCompleted(key)) {
+          currentStreak++;
+          key = this.getPreviousDateKey(key);
         }
-        break;
+      }
+    } else {
+      while (isCompleted(key)) {
+        currentStreak++;
+        key = this.getPreviousDateKey(key);
       }
     }
 
-    return { currentStreak, longestStreak };
+    // 2. All-Time Longest Streak: across all dates with completions for this habit
+    const habitDates = [];
+    for (const dKey in completions) {
+      if (completions[dKey] && completions[dKey][habitId]) {
+        habitDates.push(dKey);
+      }
+    }
+
+    const longestStreak = this.calculateLongestStreakFromDates(habitDates);
+
+    return {
+      currentStreak,
+      longestStreak: Math.max(currentStreak, longestStreak)
+    };
   }
 
   /**
-   * Calculate overall daily activity streak
+   * Calculate overall daily activity streak across all months
    */
-  static calculateGlobalStreak(monthData, dailyCompletedCounts) {
-    let longestStreak = 0;
-    let tempStreak = 0;
+  static calculateGlobalStreak(completions) {
+    if (!completions) return { currentStreak: 0, longestStreak: 0 };
+
+    const isDayCompleted = (key) => {
+      const dayData = completions[key];
+      if (!dayData) return false;
+      return Object.values(dayData).some(val => val === true);
+    };
+
+    const todayKey = this.getTodayKey();
+
+    // 1. Current Active Streak
     let currentStreak = 0;
+    let key = todayKey;
 
-    const days = monthData.days;
-    let activeLimitIdx = days.length - 1;
-    for (let i = 0; i < days.length; i++) {
-      if (days[i].isFuture) {
-        activeLimitIdx = i - 1;
-        break;
-      }
-    }
-    if (activeLimitIdx < 0) activeLimitIdx = 0;
-
-    for (let i = 0; i <= activeLimitIdx; i++) {
-      if (dailyCompletedCounts[i] > 0) {
-        tempStreak++;
-        if (tempStreak > longestStreak) longestStreak = tempStreak;
+    if (!isDayCompleted(key)) {
+      key = this.getPreviousDateKey(key);
+      if (!isDayCompleted(key)) {
+        currentStreak = 0;
       } else {
-        tempStreak = 0;
-      }
-    }
-
-    let backIdx = activeLimitIdx;
-    while (backIdx >= 0) {
-      if (dailyCompletedCounts[backIdx] > 0) {
-        currentStreak++;
-        backIdx--;
-      } else {
-        if (backIdx === activeLimitIdx && days[backIdx].isToday && currentStreak === 0) {
-          backIdx--;
-          continue;
+        while (isDayCompleted(key)) {
+          currentStreak++;
+          key = this.getPreviousDateKey(key);
         }
-        break;
+      }
+    } else {
+      while (isDayCompleted(key)) {
+        currentStreak++;
+        key = this.getPreviousDateKey(key);
       }
     }
 
-    return { currentStreak, longestStreak };
+    // 2. All-Time Longest Global Streak
+    const activeDates = [];
+    for (const dKey in completions) {
+      if (isDayCompleted(dKey)) {
+        activeDates.push(dKey);
+      }
+    }
+
+    const longestStreak = this.calculateLongestStreakFromDates(activeDates);
+
+    return {
+      currentStreak,
+      longestStreak: Math.max(currentStreak, longestStreak)
+    };
+  }
+
+  /**
+   * Helper to find maximum consecutive days in an array of YYYY-MM-DD date strings
+   */
+  static calculateLongestStreakFromDates(dateKeys) {
+    if (!dateKeys || dateKeys.length === 0) return 0;
+    const sorted = [...new Set(dateKeys)].sort();
+    let longest = 1;
+    let current = 1;
+
+    for (let i = 1; i < sorted.length; i++) {
+      const prevKey = sorted[i - 1];
+      const currKey = sorted[i];
+      if (this.getPreviousDateKey(currKey) === prevKey) {
+        current++;
+        if (current > longest) longest = current;
+      } else {
+        current = 1;
+      }
+    }
+
+    return longest;
   }
 }

@@ -1,4 +1,4 @@
-﻿# Habit Tracker Dashboard
+# Habit Tracker Dashboard
 
 A polished, responsive, and offline-first **Monthly Habit Tracking Web Application** crafted with HTML5, CSS3, and Vanilla JavaScript (ES6+), closely based on the reference design.
 
@@ -62,10 +62,14 @@ A polished, responsive, and offline-first **Monthly Habit Tracking Web Applicati
 habit-tracker/
 │
 ├── index.html              # Main HTML markup with accessible semantic layout
+├── server.js               # Lightweight Node.js static server
+├── build.js                # Bundling script for offline bundle.js
+├── package.json            # Project metadata and npm scripts
 ├── css/
 │   └── style.css           # Complete pastel stylesheet, responsive grid & CSS variables
 ├── js/
 │   ├── app.js              # Application controller, modal handling & drag-and-drop
+│   ├── bundle.js           # Auto-built standalone script for offline & file:// support
 │   ├── storage.js          # LocalStorage CRUD, export/import & demo data generator
 │   ├── calendar.js         # Month/day calculations & week grouping
 │   ├── statistics.js       # Daily %, weekly %, monthly stats, best days & streaks
@@ -81,22 +85,32 @@ habit-tracker/
 
 Because this is a pure web application built with vanilla web standards:
 
-1. **Direct Browser Execution**:
-   - Open `index.html` directly in any modern browser (Chrome, Firefox, Edge, Safari).
-   - *Note*: If opening locally via `file://`, modern browsers might restrict ES modules. It is recommended to use a lightweight local server:
+1. **Using Node.js Server (Recommended)**:
+   ```bash
+   npm start
+   ```
+   Or:
+   ```bash
+   node server.js
+   ```
+   Then navigate to `http://127.0.0.1:3000`.
 
-2. **Using a Local Server (Recommended)**:
+2. **Direct Browser Execution**:
+   - Open `index.html` directly in any modern browser (Chrome, Firefox, Edge, Safari). Works out of the box via `bundle.js`.
+
+3. **Building / Updating the Bundle**:
+   - If you modify files in `js/` (`app.js`, `calendar.js`, etc.), re-bundle by running:
+   ```bash
+   npm run build
+   ```
+
+4. **Alternative Local Servers**:
    - With Python:
      ```bash
      python -m http.server 8000
      ```
-     Then navigate to `http://localhost:8000`.
    - With VS Code:
      Right-click `index.html` and select **"Open with Live Server"**.
-   - With Node.js / npx:
-     ```bash
-     npx serve .
-     ```
 
 ---
 

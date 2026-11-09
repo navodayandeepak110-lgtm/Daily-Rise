@@ -1,4 +1,4 @@
-﻿/**
+/**
  * app.js - Main Application Controller
  */
 
@@ -112,6 +112,24 @@ class HabitTrackerApp {
   }
 
   updateDropdownSelections() {
+    let yrOptionExists = false;
+    for (let i = 0; i < this.yearSelectEl.options.length; i++) {
+      if (parseInt(this.yearSelectEl.options[i].value, 10) === this.calendar.currentYear) {
+        yrOptionExists = true;
+        break;
+      }
+    }
+    if (!yrOptionExists) {
+      const opt = document.createElement('option');
+      opt.value = this.calendar.currentYear;
+      opt.textContent = this.calendar.currentYear;
+      this.yearSelectEl.appendChild(opt);
+      const opts = Array.from(this.yearSelectEl.options);
+      opts.sort((a, b) => parseInt(a.value, 10) - parseInt(b.value, 10));
+      this.yearSelectEl.innerHTML = '';
+      opts.forEach(o => this.yearSelectEl.appendChild(o));
+    }
+
     this.monthSelectEl.value = this.calendar.currentMonth;
     this.yearSelectEl.value = this.calendar.currentYear;
     this.monthTitleEl.textContent = this.calendar.getMonthName();
@@ -180,14 +198,24 @@ class HabitTrackerApp {
     this.importFileInput.addEventListener('change', (e) => this.handleImportFile(e));
 
     // Color Swatches inside modal
-    document.querySelectorAll('.color-swatch-btn').forEach(btn => {
+    const swatchBtns = document.querySelectorAll('.color-swatch-btn');
+    swatchBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         const color = e.target.getAttribute('data-color');
         if (color) {
           this.habitColorInput.value = color;
-          document.querySelectorAll('.color-swatch-btn').forEach(b => b.classList.remove('selected'));
+          swatchBtns.forEach(b => b.classList.remove('selected'));
           e.target.classList.add('selected');
         }
+      });
+    });
+
+    // Custom color picker input sync
+    this.habitColorInput.addEventListener('input', (e) => {
+      const val = (e.target.value || '').toLowerCase();
+      swatchBtns.forEach(b => {
+        const swatchColor = (b.getAttribute('data-color') || '').toLowerCase();
+        b.classList.toggle('selected', swatchColor === val);
       });
     });
 
@@ -509,8 +537,10 @@ class HabitTrackerApp {
   }
 
   resetColorSwatchSelection(color) {
+    const target = (color || '').toLowerCase();
     document.querySelectorAll('.color-swatch-btn').forEach(b => {
-      b.classList.toggle('selected', b.getAttribute('data-color') === color);
+      const swatchColor = (b.getAttribute('data-color') || '').toLowerCase();
+      b.classList.toggle('selected', swatchColor === target);
     });
   }
 
@@ -578,6 +608,10 @@ class HabitTrackerApp {
 
   closeSettingsModal() {
     this.settingsModal.classList.remove('active');
+    const settings = this.storage.getSettings();
+    this.settingMotivText.value = settings.motivationalText || '';
+    this.settingMotivAuthor.value = settings.motivationalAuthor || 'I am...';
+    this.settingFirstDay.value = settings.firstDayOfWeek || 'monday';
   }
 
   handleSaveSettings(e) {
@@ -691,7 +725,11 @@ class HabitTrackerApp {
   }
 }
 
-// Bootstrap on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+// Bootstrap on DOM ready or immediately if already loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.app = new HabitTrackerApp();
+  });
+} else {
   window.app = new HabitTrackerApp();
-});
+}
