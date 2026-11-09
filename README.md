@@ -4,6 +4,8 @@ A polished, responsive, and offline-first **Monthly Habit Tracking Web Applicati
 
 ![Habit Tracker Dashboard](assets/preview.png)
 
+Site is live at https://navodayandeepak110-lgtm.github.io/Daily-Rise/
+
 ---
 
 ## 🌟 Features
